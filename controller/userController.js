@@ -29,6 +29,7 @@ const loginUser = async (req, res) => {
       message: "Login Successfully!",
       email: user.email,
       role: user.role,
+      id: user.id,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -48,11 +49,13 @@ const register = async (req, res) => {
       email: req.body.email,
       password: hashedPassword,
       role: req.body.role,
+      id: req.body.id,
     });
 
     res.status(200).json({
       message: "User Created",
       role: req.body.role,
+      id: req.body.id,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -79,9 +82,9 @@ const getUserById = async (req, res) => {
   try {
     const user = await userdb.findById(id);
     if (!user) {
-      res.status(401).json({ message: `No user with ID:${id}` });
+      return res.status(401).json({ message: `No user with ID:${id}` });
     }
-    res.status(200).json(user);
+    return res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -92,20 +95,32 @@ const updateUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Assuming req.body contains the updated user data with a 'password' field
-    if (req.body.password) {
-      const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
-      req.body.password = hashedPassword;
+    const existingUser = await userdb.findOne({ email: req.body.email });
+    if (existingUser && existingUser._id.toString() !== id) {
+      return res.status(400).json({ message: "Email already in use." });
     }
 
-    const user = await userdb.findByIdAndUpdate(id, req.body, { new: true });
+    const userData = { ...req.body };
+
+    const user = await userdb.findById(id);
     if (!user) {
       return res
         .status(401)
         .json({ message: `No User Found with this id ${id}` });
     }
 
-    return res.status(200).json(user);
+    if (req.body.password.trim() === user.password.trim()) {
+      delete userData.password; // Remove password field from update data
+    } else {
+      const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
+      userData.password = hashedPassword; // Hash the new password for update
+    }
+
+    const updatedUser = await userdb.findByIdAndUpdate(id, userData, {
+      new: true,
+    });
+
+    return res.status(200).json(updatedUser);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

@@ -1,4 +1,5 @@
 const profiling = require("../model/profilingModel");
+const mongoose = require("mongoose");
 
 //Create
 
@@ -108,17 +109,31 @@ const getStudent = async (req, res) => {
   }
 };
 
+//get studentbyId
+const getStudentById = async (req, res) => {
+  const userId = req.params.userId; // Access userId directly
+  try {
+    const student = await profiling.Student.findById(userId);
+    if (!student) {
+      return res.status(401).json({ message: "No Student Found!" });
+    }
+    return res.status(200).json(student);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //get subject
 const getSubject = async (req, res) => {
   try {
-    const student = await profiling.Subject.find().populate([
+    const subject = await profiling.Subject.find().populate([
       "course",
       "instructor",
     ]);
-    if (!student) {
+    if (!subject) {
       res.status(401).json({ message: "No Student Found!" });
     }
-    res.status(200).json(student);
+    res.status(200).json(subject);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -127,10 +142,60 @@ const getSubject = async (req, res) => {
 // get schedule
 const getSchedule = async (req, res) => {
   try {
-    const schedule = await profiling.Schedule.find().populate("subject");
+    const schedule = await profiling.Schedule.find().populate({
+      path: "subject",
+      populate: ["instructor", "course"],
+    });
     if (!schedule) {
       res.status(401).json({ message: "No Student Found!" });
     }
+    res.status(200).json(schedule);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// get schedule by instructor id
+const getScheduleByInstructor = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const schedule = await profiling.Schedule.aggregate([
+      {
+        $lookup: {
+          from: "subjects", // Replace with your actual subject collection name
+          localField: "subject",
+          foreignField: "_id",
+          as: "subjectInfo",
+        },
+      },
+      {
+        $unwind: "$subjectInfo",
+      },
+      {
+        $lookup: {
+          from: "instructors", // Replace with your actual instructor collection name
+          localField: "subjectInfo.instructor",
+          foreignField: "_id",
+          as: "instructorInfo",
+        },
+      },
+      {
+        $unwind: "$instructorInfo",
+      },
+      {
+        $match: {
+          "instructorInfo._id": new mongoose.Types.ObjectId(userId), // Convert userId to ObjectId type if using Mongoose
+        },
+      },
+    ]);
+
+    if (!schedule || schedule.length === 0) {
+      return res
+        .status(401)
+        .json({ message: "No Schedule Found for this Instructor!" });
+    }
+
     res.status(200).json(schedule);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -151,4 +216,6 @@ module.exports = {
   getSubject,
   getStudent,
   getSchedule,
+  getStudentById,
+  getScheduleByInstructor,
 };
