@@ -139,6 +139,70 @@ const getSubject = async (req, res) => {
   }
 };
 
+//get specific subject
+const getSubjectById = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const subject = await profiling.Subject.findById(id).populate([
+      "course",
+      "instructor",
+    ]);
+    if (!subject) {
+      res.status(401).json({ message: "No Student Found!" });
+    }
+    res.status(200).json(subject);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//get subject assigned
+const getSubjectByInstructor = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const Subject = await profiling.Subject.aggregate([
+      {
+        $lookup: {
+          from: "courses", // Replace with your actual subject collection name
+          localField: "course",
+          foreignField: "_id",
+          as: "courseInfo",
+        },
+      },
+      {
+        $unwind: "$courseInfo",
+      },
+      {
+        $lookup: {
+          from: "instructors", // Replace with your actual instructor collection name
+          localField: "instructor",
+          foreignField: "_id",
+          as: "instructorInfo",
+        },
+      },
+      {
+        $unwind: "$instructorInfo",
+      },
+      {
+        $match: {
+          "instructorInfo._id": new mongoose.Types.ObjectId(userId), // Convert userId to ObjectId type if using Mongoose
+        },
+      },
+    ]);
+
+    if (!Subject || Subject.length === 0) {
+      return res
+        .status(401)
+        .json({ message: "No Subject Found for this Instructor!" });
+    }
+
+    res.status(200).json(Subject);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // get schedule
 const getSchedule = async (req, res) => {
   try {
@@ -202,6 +266,114 @@ const getScheduleByInstructor = async (req, res) => {
   }
 };
 
+//get instructors
+const getInstructor = async (req, res) => {
+  try {
+    const instructor = await profiling.Instructor.find().populate("department");
+    if (!instructor) {
+      res.status(400).json({ message: "No instructor in the database" });
+    }
+    return res.status(200).json(instructor);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//get student schedule
+const getStudentSchedule = async (req, res) => {
+  try {
+    const studentSched = await profiling.StudenSchedule.find()
+      .populate("student")
+      .populate({ path: "schedule", populate: "subject" });
+    if (!studentSched) {
+      return res.status(400).json({ message: "No Student in this subject" });
+    }
+    return res.status(200).json(studentSched);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//get student schedule By Subject ID
+const getStudSchedBySubId = async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const studSubSched = await profiling.StudenSchedule.aggregate([
+      {
+        $lookup: {
+          from: "students", // Replace with your actual subject collection name
+          localField: "student",
+          foreignField: "_id",
+          as: "studentInfo",
+        },
+      },
+      {
+        $unwind: "$studentInfo",
+      },
+      {
+        $lookup: {
+          from: "schedules", // Replace with your actual instructor collection name
+          localField: "schedule",
+          foreignField: "_id",
+          as: "scheduleInfo",
+        },
+      },
+      {
+        $unwind: "$scheduleInfo",
+      },
+      {
+        $lookup: {
+          from: "subjects", // Replace with your actual instructor collection name
+          localField: "scheduleInfo.subject",
+          foreignField: "_id",
+          as: "subjectInfo",
+        },
+      },
+      {
+        $unwind: "$subjectInfo",
+      },
+      {
+        $lookup: {
+          from: "courses", // Replace with your actual instructor collection name
+          localField: "subjectInfo.course",
+          foreignField: "_id",
+          as: "courseInfo",
+        },
+      },
+      {
+        $unwind: "$courseInfo",
+      },
+      {
+        $lookup: {
+          from: "instructors", // Replace with your actual instructor collection name
+          localField: "subjectInfo.instructor",
+          foreignField: "_id",
+          as: "instructorInfo",
+        },
+      },
+      {
+        $unwind: "$instructorInfo",
+      },
+      {
+        $match: {
+          "subjectInfo._id": new mongoose.Types.ObjectId(id), // Convert userId to ObjectId type if using Mongoose
+        },
+      },
+    ]);
+
+    if (!studSubSched || studSubSched.length === 0) {
+      return res
+        .status(401)
+        .json({ message: "No Schedule Found for this Instructor!" });
+    }
+
+    res.status(200).json(studSubSched);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   //create
   createDepartment,
@@ -218,4 +390,9 @@ module.exports = {
   getSchedule,
   getStudentById,
   getScheduleByInstructor,
+  getInstructor,
+  getSubjectByInstructor,
+  getSubjectById,
+  getStudentSchedule,
+  getStudSchedBySubId,
 };
