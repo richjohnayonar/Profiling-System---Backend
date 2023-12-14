@@ -94,6 +94,21 @@ const creaetStudentSchedule = async (req, res) => {
   }
 };
 
+//create payment
+const createPayment = async (req, res) => {
+  try {
+    const payment = await profiling.Payment.create(req.body);
+    if (!payment) {
+      return res
+        .status(400)
+        .json({ message: "No Data Found in this database" });
+    }
+    return res.status(200).json(payment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //fetch
 
 //get student
@@ -389,6 +404,71 @@ const getStudSchedBySubId = async (req, res) => {
   }
 };
 
+//get payment
+const getPayment = async (req, res) => {
+  try {
+    const payment = await profiling.Payment.find().populate("student");
+    if (!payment) {
+      return res.status(400).json({ message: "No Data Found." });
+    }
+    return res.status(200).json(payment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//get payment by id
+const getPaymentById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const payment = await profiling.Payment.findById(id);
+    if (!payment) {
+      return res
+        .status(400)
+        .json({ message: `No Data Found with ${id} in the database.` });
+    }
+    return res.status(200).json(payment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// update
+
+//update payment
+const updatePayment = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const payment = await profiling.Payment.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+    if (!payment) {
+      return res.status(400).json({ message: "No payment data found." });
+    }
+    return res.status(200).json(payment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+//delete
+
+//delete payment record
+const deletePayment = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const payment = await profiling.Payment.findByIdAndDelete(id);
+    if (!payment) {
+      return res
+        .status(400)
+        .json({ message: `No ID:${id} found in database.` });
+    }
+    return res.status(200).json({ message: `ID:${id} successfully deleted!` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   //create
   createDepartment,
@@ -398,6 +478,7 @@ module.exports = {
   createSubject,
   createSchedule,
   creaetStudentSchedule,
+  createPayment,
 
   //fetch
   getSubject,
@@ -411,4 +492,12 @@ module.exports = {
   getStudentSchedule,
   getStudSchedBySubId,
   getCourse,
+  getPayment,
+  getPaymentById,
+
+  //update
+  updatePayment,
+
+  //delete
+  deletePayment,
 };

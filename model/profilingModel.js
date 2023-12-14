@@ -116,7 +116,7 @@ const PaymentSchema = mongoose.Schema({
   description: {
     type: String,
   },
-  Amount: {
+  amount: {
     type: Number,
   },
   student: {
