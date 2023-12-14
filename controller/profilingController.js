@@ -109,6 +109,21 @@ const getStudent = async (req, res) => {
   }
 };
 
+//get Course
+const getCourse = async (req, res) => {
+  try {
+    const course = await profiling.Course.find().populate("department");
+    if (!course) {
+      return res
+        .status(400)
+        .json({ message: "No course Available in database" });
+    }
+    return res.status(200).json(course);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //get studentbyId
 const getStudentById = async (req, res) => {
   const userId = req.params.userId; // Access userId directly
@@ -395,4 +410,5 @@ module.exports = {
   getSubjectById,
   getStudentSchedule,
   getStudSchedBySubId,
+  getCourse,
 };
