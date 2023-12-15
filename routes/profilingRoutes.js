@@ -16,6 +16,7 @@ router.post("/payment", profiling.createPayment);
 //GET ROUTES
 router.get("/student", profiling.getStudent);
 router.get("/subject", profiling.getSubject);
+router.get("/subjectPage", profiling.getSubjectWithPage);
 router.get("/schedule", profiling.getSchedule);
 router.get("/instructor", profiling.getInstructor);
 router.get("/student-schedule", profiling.getStudentSchedule);

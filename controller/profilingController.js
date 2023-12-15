@@ -169,6 +169,54 @@ const getSubject = async (req, res) => {
   }
 };
 
+//get subject with pagination
+const getSubjectWithPage = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const searchQuery = req.query.query;
+
+  try {
+    let subjectsQuery = profiling.Subject.find().populate([
+      "course",
+      "instructor",
+    ]);
+
+    if (searchQuery) {
+      subjectsQuery = subjectsQuery.find({
+        $or: [
+          { subjectId: { $regex: new RegExp(searchQuery, "i") } },
+          {
+            instructor: {
+              $in: await profiling.Instructor.find({
+                instructorName: { $regex: new RegExp(searchQuery, "i") },
+              }).distinct("_id"),
+            },
+          },
+        ],
+      });
+    }
+
+    const TotalSubject = await profiling.Subject.countDocuments();
+
+    const models = await subjectsQuery
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean();
+
+    const filteredModels = models.filter(
+      (model) => model.instructor && model.instructor.instructorName
+    );
+
+    res.status(200).json({
+      models: filteredModels,
+      currentPage: page,
+      totalPages: Math.ceil(TotalSubject / limit),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //get specific subject
 const getSubjectById = async (req, res) => {
   const id = req.params.id;
@@ -494,6 +542,7 @@ module.exports = {
   getCourse,
   getPayment,
   getPaymentById,
+  getSubjectWithPage,
 
   //update
   updatePayment,

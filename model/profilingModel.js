@@ -74,13 +74,26 @@ const SubjectSchema = mongoose.Schema({
   },
   course: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: Course, // Reference to the Course schema
+    ref: Course,
   },
   instructor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: Instructor, // Reference to the Course schema
+    ref: Instructor,
   },
 });
+
+// Combine multiple fields into a single field for text search
+SubjectSchema.index(
+  {
+    subjectId: "text",
+    subjectDescription: "text",
+    "$**": "text", // Search across all fields within the document
+  },
+  {
+    name: "Subject_Text_Index", // Optional: name for the index
+    default_language: "english", // Optional: specify language for text indexing
+  }
+);
 
 const Subject = mongoose.model("Subject", SubjectSchema);
 
