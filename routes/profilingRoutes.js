@@ -28,8 +28,9 @@ router.get("/subject-detail/:id", profiling.getSubjectById);
 router.get("/subject/:userId", profiling.getSubjectByInstructor);
 router.get("/schedule/:userId", profiling.getScheduleByInstructor);
 router.get("/student-schedule/:id", profiling.getStudSchedBySubId);
+router.get("/schedule-studentId/:userId", profiling.getStudentScheduById);
 router.get("/payment/:id", profiling.getPaymentById);
-
+router.get("/student-payment/:userId", profiling.getStudentPaymentStatus);
 //update routes
 router.put("/update-payment/:id", profiling.updatePayment);
 

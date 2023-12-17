@@ -372,6 +372,74 @@ const getStudentSchedule = async (req, res) => {
   }
 };
 
+const getStudentScheduById = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const schedule = await profiling.StudenSchedule.aggregate([
+      {
+        $lookup: {
+          from: "students", // Replace with your actual subject collection name
+          localField: "student",
+          foreignField: "_id",
+          as: "studentInfo",
+        },
+      },
+      {
+        $unwind: "$studentInfo",
+      },
+      {
+        $lookup: {
+          from: "schedules", // Replace with your actual instructor collection name
+          localField: "schedule",
+          foreignField: "_id",
+          as: "scheduleInfo",
+        },
+      },
+      {
+        $unwind: "$scheduleInfo",
+      },
+      {
+        $lookup: {
+          from: "subjects", // Replace with your actual instructor collection name
+          localField: "scheduleInfo.subject",
+          foreignField: "_id",
+          as: "subjectInfo",
+        },
+      },
+      {
+        $unwind: "$subjectInfo",
+      },
+      {
+        $lookup: {
+          from: "instructors", // Replace with your actual instructor collection name
+          localField: "subjectInfo.instructor",
+          foreignField: "_id",
+          as: "instructorInfo",
+        },
+      },
+      {
+        $unwind: "$instructorInfo",
+      },
+      {
+        $match: {
+          "studentInfo._id": new mongoose.Types.ObjectId(userId), // Convert userId to ObjectId type if using Mongoose
+        },
+      },
+    ]);
+
+    if (!schedule || schedule.length === 0) {
+      return res
+        .status(401)
+        .json({ message: "No Schedule Found for this student!" });
+    }
+
+    res.status(200).json(schedule);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 //get student schedule By Subject ID
 const getStudSchedBySubId = async (req, res) => {
   const id = req.params.id;
@@ -481,6 +549,41 @@ const getPaymentById = async (req, res) => {
   }
 };
 
+//get payment by student id
+const getStudentPaymentStatus = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const schedule = await profiling.Payment.aggregate([
+      {
+        $lookup: {
+          from: "students", // Replace with your actual subject collection name
+          localField: "student",
+          foreignField: "_id",
+          as: "studentInfo",
+        },
+      },
+      {
+        $unwind: "$studentInfo",
+      },
+      {
+        $match: {
+          "studentInfo._id": new mongoose.Types.ObjectId(userId), // Convert userId to ObjectId type if using Mongoose
+        },
+      },
+    ]);
+    if (!schedule || schedule.length === 0) {
+      return res
+        .status(401)
+        .json({ message: "No Payment Found for this student!" });
+    }
+
+    res.status(200).json(schedule);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // update
 
 //update payment
@@ -543,6 +646,8 @@ module.exports = {
   getPayment,
   getPaymentById,
   getSubjectWithPage,
+  getStudentScheduById,
+  getStudentPaymentStatus,
 
   //update
   updatePayment,
